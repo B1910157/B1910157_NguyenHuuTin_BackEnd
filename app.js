@@ -1,11 +1,12 @@
 const express = require("express");
 const cors = require("cors");
-const contactsRouter = require("./app/routes/contact.route");
+// const contactsRouter = require("./app/routes/contact.route");
 const usersRouter =  require("./app/routes/user.route");
-const login = require("./app/routes/login.route");
+
+const userContacts = require("./app/routes/contact_user.route");
 const ApiError = require("./app/api-error");
 
-const session = require('express-session');
+
 
 const app = express();  
 app.use(cors());
@@ -14,44 +15,10 @@ app.use(express.json());
 app.get("/", (req, res) => {
     res.json({ message: "Welcome to contact book application." });
 });
-
-
-
-
-// app.post('/api/users/login', async (req, res, next) => {
-// 	// res.json({ message: "Login page"});
-//     if(!req.body?.username){
-//         return next(new ApiError(400, "Username can not be empty"));
-//     }
-  
-//     if(!req.body?.password){
-//         return next(new ApiError(400, "Password can not be empty"));
-//     }
-//     try{
-//         var query = req.body;
-//         // console.log(query);
-//         const userService =  new UserService(MongoDB.client);
-//         const document = await userService.findOne({username: 'B1910157'});
-//         console.log(document);
-//         return res.send(document);
-//         // res.json({ message: "successful." });
-       
-       
-//     }catch (error){
-//         return next(
-//             new ApiError(500, "Login fail")
-//         );
-//     }
-
-
-// });
-
-// app.use("/login", login);
-
-
-app.use("/api/contacts", contactsRouter);
+const checkUser = require("./app/middlewares/check_user")
+app.use("/api/contacts", checkUser, userContacts);
 app.use("/api/users", usersRouter);
-app.use("/api/users/login", login);
+
 
 
 // handle 404 response

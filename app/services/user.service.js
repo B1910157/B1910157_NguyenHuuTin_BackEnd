@@ -1,5 +1,5 @@
 //sU DUNG CAC api CUA THU VIEN MONGODB DE THUC HIEN CAC THAO TAC CSDL MONGODB
-
+const bcrypt = require('bcrypt')
 const { ObjectId } = require("mongodb");
 
 class UserService {
@@ -8,11 +8,13 @@ class UserService {
     }
     // Định nghĩa các phương thức truy xuất CSDL sử dụng mongodb API
 
-    extractUserData(payload) {
+    async extractUserData(payload) {
+        const hashPass = await bcrypt.hash(payload.password, 10)
         const user = {
             username: payload.username,
-            password: payload.password
-           
+            password: hashPass,
+            contacts: payload.contacts || []
+
         };
 
         //Remove undefined fields
@@ -22,73 +24,104 @@ class UserService {
         return user;
     }
 
+    // async create(payload) {
+    //     const user = this.extractUserData(payload);
+    //     const result = await this.User.findOneAndUpdate(
+    //         user,
+    //         {
+    //             $set: { username: user.username, password: user.password }
+    //         },
+    //         {
+    //             returnDocument: "after", upsert: true
+    //         }
+    //     );
+    //     return result.value;
+    // }
+
     async create(payload) {
-        const user = this.extractUserData(payload);
-        const result = await this.User.findOneAndUpdate(
-            user,
-            {
-                $set: { username: user.username, password: user.password }
-            },
-            {
-                returnDocument: "after", upsert: true
-            }
-        );
-        return result.value;
+        const user = await this.extractUserData(payload);
+        const result = await this.User.insertOne(user);
+        return result.insertedId;
+    }
+    async findUsername(username) {
+        const user = await this.User.findOne({ username: username });
+        return user;
     }
 
+    // async addToken(userId, token) {
+    //     const rs = await this.User.updateOne(
+    //         { _id: new ObjectId(userId) },
+    //         { $set: { token: token } }
+    //     );
+    //     return rs.modifiedCount > 0;
+    // }
 
-    async find(filter) {
-        const cursor = await this.User.find(filter);
-        return await cursor.toArray();
-    }
-     
+    // async deleteToken(userId, token) {
+    //     const rs = await this.User.updateOne({
+    //         _id: new ObjectId(userId), token: token
+    //     },
+    //         {
+    //             $unset: { token: 1 }
+    //         });
+    //     return rs.modifiedCount > 0;
+    // }
+
+
+
+
     async findById(id) {
         return await this.User.findOne({
             _id: ObjectId.isValid(id) ? new ObjectId(id) : null,
         });
     }
 
-    // async findByUsername(username, password) {
-    
-    //     return await this.find({
-    //         username: { $regex: new RegExp(username), $options: "i" },
-    //         password: { $regex: new RegExp(password)}
-    //     });
+    // async update(id, payload) {
+    //     const filter = {
+    //         _id: ObjectId.isValid(id) ? new ObjectId(id) : null,
+    //     };
+    //     const update = this.extractUserData(payload);
+    //     const result = await this.User.findOneAndUpdate(
+    //         filter,
+    //         { $set: update },
+    //         { returnDocument: "after" }
+    //     );
+    //     return result.value;
     // }
-   
-    
 
+    // async delete(id) {
+    //     const result = await this.User.findOneAndDelete({
+    //         _id: ObjectId.isValid(id) ? new ObjectId(id) : null,
+    //     });
+    //     return result.value;
+    // }
+    async findByName(username) {
+        const user = await this.User.findOne({ username: username });
+        return user;
+    }
 
-    async update(id, payload) {
-        const filter = {
-            _id: ObjectId.isValid(id) ? new ObjectId(id) : null,
-        };
-        const update = this.extractUserData(payload);
-        const result = await this.User.findOneAndUpdate(
-            filter,
-            { $set: update },
-            { returnDocument: "after" }
+    async addContact(userId, contact) {
+        const result = await this.User.updateOne(
+            { _id: new ObjectId(userId) },
+            { $push: { contacts: contact } }
         );
-        return result.value;
+        // console.log("rs",result);
+        return result.modifiedCount > 0;
     }
+    // async updateContact(userId, contactId, update) {
+    //     const result = await this.User.updateOne(
+    //         { _id: new ObjectId(userId), "contacts._id": new ObjectId(contactId) },
+    //         { $set: { "contacts.$": update } }
+    //     );
+    //     return result.modifiedCount > 0;
+    // }
+    // async deleteContact(userId, contactId) {
+    //     const result = await this.User.updateOne(
+    //         { _id: new ObjectId(userId) },
+    //         { $pull: { contacts: { _id: new ObjectId(contactId) } } }
+    //     );
+    //     return result.modifiedCount > 0;
+    // }
 
-    async delete(id) {
-        const result = await this.User.findOneAndDelete({
-            _id: ObjectId.isValid(id) ? new ObjectId(id) : null,
-        });
-        return result.value;
-    }
-    async findUserr(filter){
-        return await this.User.findOne(filter);
-        // const rs = await this.User.findOne(filter);
-        // return rs.value;
-
-    }
-    
-    async deleteAll(){
-        const result = await this.User.deleteMany({});
-        return result.deletedCount;
-    }
 }
 
 
